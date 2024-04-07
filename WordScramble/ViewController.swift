@@ -26,6 +26,7 @@ class ViewController: UITableViewController {
         loadWords()
         startGame()
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(promptForAnswer))
+        navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .refresh, target: self, action: #selector(startGame))
     }
 
     func loadWords() {
@@ -40,7 +41,7 @@ class ViewController: UITableViewController {
         }
     }
     
-    func startGame() {
+    @objc func startGame() {
         title = allWords.randomElement()
         usedWords.removeAll(keepingCapacity: true)
         tableView.reloadData()
@@ -61,35 +62,33 @@ class ViewController: UITableViewController {
     
     func submit(_ answer: String) {
         let lowerAnswer = answer.lowercased()
-        let errorTitle: String
-        let errorMessage: String
         
-        if isPossible(word: lowerAnswer) {
-            if isOriginal(word: lowerAnswer) {
-                if isReal(word: lowerAnswer) {
-                    usedWords.insert(answer, at: 0)
-                    
-                    let indexPath = IndexPath(row: 0, section: 0)
-                    tableView.insertRows(at: [indexPath], with: .automatic)
-                    
-                    return
+        if let title = title?.lowercased(), lowerAnswer != title {
+            if lowerAnswer.count >= 3 {
+                if isPossible(word: lowerAnswer) {
+                    if isOriginal(word: lowerAnswer) {
+                        if isReal(word: lowerAnswer) {
+                            usedWords.insert(answer, at: 0)
+                            
+                            let indexPath = IndexPath(row: 0, section: 0)
+                            tableView.insertRows(at: [indexPath], with: .automatic)
+                            
+                            return
+                        } else {
+                            showErrorMessage(title: "Word not recognized", message: "You can't just make them up, you know!")
+                        }
+                    } else {
+                        showErrorMessage(title: "Word used already", message: "Be more original!")
+                    }
                 } else {
-                    errorTitle = "Word not recognized"
-                    errorMessage = "You can't just make them up, you know!"
+                    showErrorMessage(title: "Word not possible", message: "You can't spell that word from \(title)")
                 }
             } else {
-                errorTitle = "Word used already"
-                errorMessage = "Be more original!"
+                showErrorMessage(title: "Word is too short", message: "Don't be lazy!")
             }
         } else {
-            guard let title = title?.lowercased() else { return }
-            errorTitle = "Word not possible"
-            errorMessage = "You can't spell that word from \(title)"
+            showErrorMessage(title: "Word is the same", message: "Be more creative!")
         }
-        
-        let ac = UIAlertController(title: errorTitle, message: errorMessage, preferredStyle: .alert)
-        ac.addAction(UIAlertAction(title: "OK", style: .default))
-        present(ac, animated: true)
     }
     
     func isPossible(word: String) -> Bool {
@@ -106,7 +105,7 @@ class ViewController: UITableViewController {
     }
 
     func isOriginal(word: String) -> Bool {
-        return !usedWords.contains(word)
+        return usedWords.first { $0.lowercased() == word.lowercased() } == nil
     }
 
     func isReal(word: String) -> Bool {
@@ -115,6 +114,12 @@ class ViewController: UITableViewController {
         let misspelledRange = checker.rangeOfMisspelledWord(in: word, range: range, startingAt: 0, wrap: false, language: "en")
         
         return misspelledRange.location == NSNotFound
+    }
+    
+    func showErrorMessage(title: String, message: String) {
+        let ac = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        ac.addAction(UIAlertAction(title: "OK", style: .default))
+        present(ac, animated: true)
     }
 }
 
