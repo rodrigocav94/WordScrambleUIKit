@@ -24,9 +24,9 @@ class ViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         loadWords()
-        startGame()
+        initializeGame()
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(promptForAnswer))
-        navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .refresh, target: self, action: #selector(startGame))
+        navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .refresh, target: self, action: #selector(restartGame))
     }
 
     func loadWords() {
@@ -41,10 +41,33 @@ class ViewController: UITableViewController {
         }
     }
     
-    @objc func startGame() {
+    func initializeGame() {
+        let defaults = UserDefaults.standard
+        let previousTitle = defaults.string(forKey: "title")
+        let previousUsedWords = defaults.stringArray(forKey: "usedWords")
+        
+        if let previousTitle, let previousUsedWords {
+            title = previousTitle
+            usedWords = previousUsedWords
+        } else {
+            title = allWords.randomElement()
+            usedWords.removeAll(keepingCapacity: true)
+            tableView.reloadData()
+            saveToUserDefaults()
+        }
+    }
+    
+    @objc func restartGame() {
         title = allWords.randomElement()
         usedWords.removeAll(keepingCapacity: true)
         tableView.reloadData()
+        saveToUserDefaults()
+    }
+    
+    func saveToUserDefaults() {
+        let defaults = UserDefaults.standard
+        defaults.setValue(title, forKey: "title")
+        defaults.setValue(usedWords, forKey: "usedWords")
     }
     
     @objc func promptForAnswer() {
@@ -72,6 +95,7 @@ class ViewController: UITableViewController {
                             
                             let indexPath = IndexPath(row: 0, section: 0)
                             tableView.insertRows(at: [indexPath], with: .automatic)
+                            saveToUserDefaults()
                             
                             return
                         } else {
